@@ -38,11 +38,17 @@ static ID ID_use_system_connection_data;
 
 /* MQSCO ID's */
 static ID ID_key_repository;
+static ID ID_cert_label;
 
 /* Admin ID's */
 static ID ID_create_queue;
 static ID ID_q_name;
 static ID ID_command;
+
+/* Versions */
+static ID ID_options_ver; // MQCNO Version
+static ID ID_client_opts_ver; // MQCD Version
+static ID ID_ssl_opts_ver; // MQSCO Version
 
 void QueueManager_id_init(void)
 {
@@ -84,6 +90,12 @@ void QueueManager_id_init(void)
     /* MQSCO ID's */
     ID_key_repository       = rb_intern("key_repository");
     ID_crypto_hardware      = rb_intern("crypto_hardware");
+    ID_cert_label           = rb_intern("cert_label");
+
+    /* VERSIONS */
+    ID_options_ver = rb_intern("options_ver");
+    ID_client_opts_ver = rb_intern("client_opts_ver"); 
+    ID_ssl_opts_ver = rb_intern("ssl_opts_ver");
 
     /* Admin ID's */
     ID_create_queue         = rb_intern("create_queue");
@@ -209,6 +221,8 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
     Data_Get_Struct(self, QUEUE_MANAGER, pqm);
 
     WMQ_HASH2MQLONG(hash,trace_level, pqm->trace_level)
+    WMQ_HASH2MQLONG(hash,options_ver, pqm->connect_options.Version)
+
 
     /* @name = options[:q_mgr_name] || ''     # QMGR Name optional with Client Connection */
     val = rb_hash_aref(hash, ID2SYM(ID_q_mgr_name));
@@ -262,6 +276,7 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
         WMQ_HASH2MQCHARS(hash,receive_user_data,           pmqcd->ReceiveUserData)
         WMQ_HASH2MQCHARS(hash,user_identifier,             pmqcd->UserIdentifier)
         WMQ_HASH2MQCHARS(hash,password,                    pmqcd->Password)
+        WMQ_HASH2MQLONG(hash,client_opts_ver, pmqcd->Version)
 
         /* Default channel name to system default */
         val = rb_hash_aref(hash, ID2SYM(ID_channel_name));
@@ -348,6 +363,8 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
             /* Process MQSCO */
             WMQ_HASH2MQCHARS(hash,key_repository,              pqm->ssl_config_opts.KeyRepository)
             WMQ_HASH2MQCHARS(hash,crypto_hardware,             pqm->ssl_config_opts.CryptoHardware)
+            WMQ_HASH2MQCHARS(hash,cert_label,                  pqm->ssl_config_opts.CertificateLabel)
+            WMQ_HASH2MQLONG(hash,ssl_opts_ver, pqm->ssl_config_opts.Version)
 
             pqm->connect_options.SSLConfigPtr = &pqm->ssl_config_opts;
         }
@@ -411,6 +428,17 @@ VALUE QueueManager_connect(VALUE self)
 
         pqm->MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
     }
+
+    // printf("Cert label: %s\n", pqm->connect_options.SSLConfigPtr->CertificateLabel);
+    // printf("Key repo: %s\n", pqm->connect_options.SSLConfigPtr->KeyRepository);
+    // printf("Ssl cipher spec: %s\n", pqm->client_conn.SSLCipherSpec);    
+    // printf("Ssl ver: %d\n", pqm->ssl_config_opts.Version);
+    // printf("Channel name: %s\n", pqm->client_conn.ChannelName);
+    // printf("Connection name: %s\n", pqm->client_conn.ConnectionName);
+    // printf("Client ver: %d\n", pqm->client_conn.Version);
+    // printf("Transport type: %s\n", pqm->connect_options);
+    // printf("Main ver: %d\n", pqm->connect_options.Version);
+
 
     pqm->MQCONNX(
             RSTRING_PTR(name),       /* queue manager                  */
