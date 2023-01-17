@@ -9,7 +9,7 @@ require_relative '../../generate/generate_const'
 require_relative '../../generate/generate_structs'
 
 include_path = ''
-unless (RUBY_PLATFORM =~ /win/i) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)
+unless (RUBY_PLATFORM =~ /win/i && !RUBY_PLATFORM.match?(/darwin/i)) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)
   include_path = '/opt/mqm/inc'
   dir_config('mqm', include_path, '/opt/mqm/lib')
   have_library('mqic')
